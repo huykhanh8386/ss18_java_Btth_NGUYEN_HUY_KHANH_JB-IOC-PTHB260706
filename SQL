@@ -1,0 +1,198 @@
+CREATE DATABASE ProductManagement;
+CREATE TABLE product (
+     product_id SERIAL PRIMARY KEY,
+     product_name VARCHAR(100) NOT NULL UNIQUE,
+     product_price DOUBLE PRECISION NOT NULL CHECK (product_price > 0),
+     product_title VARCHAR(200) NOT NULL,
+     product_created DATE NOT NULL,
+     product_catalog VARCHAR(100) NOT NULL,
+     product_status BOOLEAN DEFAULT TRUE
+);
+INSERT INTO product
+(product_name, product_price, product_title,
+ product_created, product_catalog, product_status)
+VALUES
+    ('Laptop Dell', 15000000, 'Laptop văn phòng',
+     '2026-10-01', 'Laptop', TRUE),
+    ('Asus Vivobook', 17000000, 'Laptop học tập',
+     '2026-10-01', 'Laptop', TRUE),
+    ('Chuột Logitech', 500000, 'Chuột không dây',
+     '2026-10-01', 'Phụ kiện', TRUE);
+CREATE OR REPLACE FUNCTION get_all_products()
+    RETURNS TABLE (
+                      id INT,
+                      name VARCHAR,
+                      price DOUBLE PRECISION,
+                      title VARCHAR,
+                      created DATE,
+                      catalog VARCHAR,
+                      status BOOLEAN
+                  )
+    LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+        SELECT
+            product_id,
+            product_name,
+            product_price,
+            product_title,
+            product_created,
+            product_catalog,
+            product_status
+        FROM product;
+END;
+$$;
+CREATE OR REPLACE FUNCTION check_catalog(
+    p_catalog VARCHAR
+)
+    RETURNS BOOLEAN
+    LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1
+        FROM product
+        WHERE product_catalog = p_catalog
+    );
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE add_product(
+    p_name VARCHAR,
+    p_price DOUBLE PRECISION,
+    p_title VARCHAR,
+    p_created DATE,
+    p_catalog VARCHAR,
+    p_status BOOLEAN
+)
+    LANGUAGE plpgsql
+AS $$
+BEGIN
+    INSERT INTO product (
+        product_name,
+        product_price,
+        product_title,
+        product_created,
+        product_catalog,
+        product_status
+    )
+    VALUES (
+               p_name,
+               p_price,
+               p_title,
+               p_created,
+               p_catalog,
+               p_status
+           );
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE update_product(
+    p_id INT,
+    p_name VARCHAR,
+    p_price DOUBLE PRECISION,
+    p_title VARCHAR,
+    p_created DATE,
+    p_catalog VARCHAR,
+    p_status BOOLEAN
+)
+    LANGUAGE plpgsql
+AS $$
+BEGIN
+    UPDATE product
+    SET
+        product_name = p_name,
+        product_price = p_price,
+        product_title = p_title,
+        product_created = p_created,
+        product_catalog = p_catalog,
+        product_status = p_status
+    WHERE product_id = p_id;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE delete_product(
+    p_id INT
+)
+    LANGUAGE plpgsql
+AS $$
+BEGIN
+    DELETE FROM product
+    WHERE product_id = p_id;
+END;
+$$;
+CREATE OR REPLACE FUNCTION get_product_by_id(
+    p_id INT
+)
+    RETURNS TABLE (
+                      id INT,
+                      name VARCHAR,
+                      price DOUBLE PRECISION,
+                      title VARCHAR,
+                      created DATE,
+                      catalog VARCHAR,
+                      status BOOLEAN
+                  )
+    LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+        SELECT
+            product_id,
+            product_name,
+            product_price,
+            product_title,
+            product_created,
+            product_catalog,
+            product_status
+        FROM product
+        WHERE product_id = p_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION search_product(
+    p_name VARCHAR
+)
+    RETURNS TABLE (
+                      id INT,
+                      name VARCHAR,
+                      price DOUBLE PRECISION,
+                      title VARCHAR,
+                      created DATE,
+                      catalog VARCHAR,
+                      status BOOLEAN
+                  )
+    LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+        SELECT
+            product_id,
+            product_name,
+            product_price,
+            product_title,
+            product_created,
+            product_catalog,
+            product_status
+        FROM product
+        WHERE product_name ILIKE '%' || p_name || '%';
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION statistic_by_catalog()
+    RETURNS TABLE (
+                      catalog VARCHAR,
+                      total BIGINT
+                  )
+    LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+        SELECT
+            product_catalog,
+            COUNT(*)
+        FROM product
+        GROUP BY product_catalog;
+END;
+$$;
